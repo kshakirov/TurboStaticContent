@@ -28,8 +28,8 @@ import java.util.Arrays;
  * Created by kshakirov on 2/23/18.
  */
 public class HttpFuncs {
-    static class HttpRequestRunner extends DoFn<KV<String, String>, KV<String, String>> {
-        private String host = "http://development.localhost/";
+    static class HttpRequestRunner extends DoFn<KV<String, String>, KV<String, KV<String,String>>> {
+        private String host = "http://staging.turbointernational.com/";
 
         private String getType(String url){
             String [] segments = url.split("/");
@@ -73,9 +73,11 @@ public class HttpFuncs {
             try {
                 response = client.execute(httpPost);
                 body = handler.handleResponse(response);
+                System.out.println(String.format("Received Part [%s]", sku));
                 client.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println(String.format("Cannot Get Part [%s]", sku));
+                System.out.println(e.getMessage());
             }
             return body;
         }
@@ -84,20 +86,20 @@ public class HttpFuncs {
         public void processElement(ProcessContext c) {
             String url = host + c.element().getValue();
             String sku = ((KV<String, String>) c.element()).getKey();
+            String subKey = "part";
             url = url.replace("SKU", sku);
             String body = "";
             if (url.contains("frontend") ) {
                 body = makePostRequest(url, sku);
-                sku = String.format("%s_part",sku);
             }else if(url.contains("where_used")){
                 body = makePostRequest(url, sku);
-                sku = String.format("%s_where_used", sku);
+                subKey = "where_used";
             }
             else {
                 body = makeGetRequest(url, sku);
-                sku = String.format("%s_%s",sku, getType(url));
+                subKey = String.format("%s_%s",sku, getType(url));
             }
-            c.output(KV.of(sku, body));
+            c.output(KV.of(sku, KV.of(subKey,body)));
 
 
         }
@@ -111,11 +113,13 @@ public class HttpFuncs {
                     sku.apply(ParDo.of(new DoFn<String, KV<String, String>>() {
                         @ProcessElement
                         public void processElement(ProcessContext c) {
+//                            ArrayList<String> urls = new ArrayList<String>(Arrays.asList(
+//                                    "frontend/product", "attrsreader/product/SKU/where_used/",
+//                                    "attrsreader/product/SKU/bom/",
+//                                    "attrsreader/product/SKU/interchanges/",
+//                                    "attrsreader/product/SKU/service_kits/"));
                             ArrayList<String> urls = new ArrayList<String>(Arrays.asList(
-                                    "frontend/product", "attrsreader/product/SKU/where_used/",
-                                    "attrsreader/product/SKU/bom/",
-                                    "attrsreader/product/SKU/interchanges/",
-                                    "attrsreader/product/SKU/service_kits/"));
+                                    "frontend/product"));
                             for (String url : urls
                                     ) {
                                 c.output(KV.of(c.element(), url));

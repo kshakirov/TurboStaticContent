@@ -9,8 +9,13 @@ package com.pims;
         import org.apache.beam.sdk.transforms.*;
         import org.apache.beam.sdk.values.KV;
         import org.apache.beam.sdk.io.redis.*;
+        import org.apache.commons.io.FileUtils;
 
 
+        import java.io.File;
+        import java.io.FileNotFoundException;
+        import java.io.FileOutputStream;
+        import java.io.IOException;
         import java.util.Iterator;
         import java.util.regex.Pattern;
 
@@ -42,7 +47,7 @@ public class TestPipeline {
         }
 
 
-        p.apply(TextIO.read().from("test.txt"))
+        p.apply(TextIO.read().from("sitemap.txt"))
                 .apply("ExtractUrls", ParDo.of(new DoFn<String, String>() {
                     @ProcessElement
                     public void processElement(ProcessContext c) {
@@ -53,7 +58,8 @@ public class TestPipeline {
                 .apply(Regex.replaceFirst("/",""))
                 .apply(new HttpFuncs.CreateRequestUrsl())
                 .apply(ParDo.of(HttpFuncs.getHttpRequestRunnerFunc()))
-                .apply(RedisIO.write().withEndpoint("localhost",6379));
+                .apply(GroupByKey.create())
+                .apply(ParDo.of(HtmlProcessor.createPartProcessor()));
         p.run().waitUntilFinish();
     }
 }

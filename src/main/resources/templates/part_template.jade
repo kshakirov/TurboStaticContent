@@ -1,0 +1,39 @@
+doctype html
+html
+  head
+    title= pageTitle
+  body
+    h1 Product Information
+    table
+        tr
+            td Part Type
+            td=part_type
+        tr
+            td  Manufacturer
+            td=manufacturer
+        tr
+            td  Part Number
+            td=part_number
+        tr
+            td  Name
+            td=name
+        tr
+            td Description
+            td=description
+    h1 Additional Information
+    table
+        tr
+            td Turbo Type
+            td=turbo_type
+        tr
+            td Turbo Model
+            td=turbo_model
+
+
+    h1 Critical Dimensions
+    table
+        tbody
+            each row in rows
+                tr
+                    td #{row.label}
+                    td #{row.value}
