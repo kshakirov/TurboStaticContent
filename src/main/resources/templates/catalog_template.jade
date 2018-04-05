@@ -1,0 +1,14 @@
+doctype html
+html
+    head
+        title= Catalog
+    body
+        h1 Catalog
+        table
+            tbody
+                each part in parts
+                    tr
+                        td Part - #{part.sku}
+                        td
+                            a(href="#{part.url}") Click here
+
