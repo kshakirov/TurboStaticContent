@@ -39,6 +39,7 @@ public class HtmlProcessor {
                 e.printStackTrace();
             }
         }
+
         private String getTemplate(String filename) {
             return getClass().getClassLoader().getResource("templates/" + filename).getPath();
 
@@ -55,20 +56,20 @@ public class HtmlProcessor {
 
         private Map<String, Object> createModel(List<String> keys) {
             Map<String, Object> model = new HashMap<>();
-            model.put("parts",createCatalogTable(keys));
+            model.put("parts", createCatalogTable(keys));
             return model;
         }
 
         @Override
         public String apply(Iterable<String> keys) {
-            if(keys.iterator().hasNext()) {
+            if (keys.iterator().hasNext()) {
                 List<String> keysList = Lists.newArrayList(keys);
                 Map<String, Object> model = createModel(keysList);
-                if(keysList.size() > 1) {
+                if (keysList.size() > 1) {
                     try {
                         String html = Jade4J.render(getTemplate("catalog_template.jade"), model);
-                        System.out.println(String.format("Appending to File [%d] items",keysList.size()));
-                        FileUtils.writeStringToFile(catalogFile, html,true);
+                        System.out.println(String.format("Appending to File [%d] items", keysList.size()));
+                        FileUtils.writeStringToFile(catalogFile, html, true);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -142,35 +143,62 @@ public class HtmlProcessor {
             return model;
         }
 
-        private String createPartModel(String partSource, String sku) {
+        private Map<String, Object> createPartModel(String partSource, String sku) {
             Gson gson = new Gson();
             Part part = gson.fromJson(partSource, Part.class);
+            return createModel(part);
+
+        }
+
+        private List<Map<String, Object>> createInterchanges(Interchange[] interchanges) {
+            Stream<Interchange> stream = Stream.of(interchanges);
+            return   stream.map(i->{
+                Map<String, Object> ii = new HashedMap();
+                ii.put("manufacturer", i.manufacturer);
+                ii.put("part_number", i.part_number);
+                ii.put("description", i.description);
+                return ii;
+            }).collect(Collectors.toList());
+        }
+
+        private Map<String, Object> addInterchangesModel(Map<String, Object> model, String interchanges) {
+            Gson gson = new Gson();
+            Interchange[] ints = gson.fromJson(interchanges, Interchange[].class);
+            if(ints.length > 0)
+                model.put("interchanges", createInterchanges(ints));
+            else
+                model.put("interchanges",Collections.emptyList());
+            return model;
+        }
+
+        private String createPartPage(String key, Iterator<KV<String, String>> iterator) {
+            Map<String, Object> model = null;
             String html = "";
-            Map<String, Object> model = createModel(part);
+            while (iterator.hasNext()) {
+                KV<String, String> elem = iterator.next();
+                if (elem.getKey().equalsIgnoreCase("part"))
+                    model = createPartModel(elem.getValue(), key);
+                if (elem.getKey().equalsIgnoreCase("interchanges"))
+                    model = addInterchangesModel(model, elem.getValue());
+            }
             try {
                 html = Jade4J.render(getTemplate("part_template.jade"), model);
             } catch (IOException e) {
                 e.printStackTrace();
             }
             return html;
+
         }
 
         @ProcessElement
         public void processElement(ProcessContext c) {
-            File temp = new File("responses/" + c.element().getKey() + ".html");
+            File temp = new File("/home/kshakirov/git/sinatra-prerenderer/public/" + c.element().getKey() + ".html");
             try {
                 Iterator<KV<String, String>> iterator = c.element().getValue().iterator();
-                StringBuilder stringBuilder = new StringBuilder();
-                String html = "empty";
-                while (iterator.hasNext()) {
-                    KV<String, String> elem = iterator.next();
-                    if (elem.getKey().equalsIgnoreCase("part"))
-                        stringBuilder.append(elem.getValue());
-                    html = createPartModel(stringBuilder.toString(), c.element().getKey());
-                }
+                String key = c.element().getKey();
+                String html = createPartPage(key, iterator);
                 FileUtils.writeStringToFile(temp, html);
                 List<PCollection<String>> sourceStringCollection = new ArrayList<>();
-                String key = c.element().getKey();
                 c.output(key);
 
             } catch (IOException e) {

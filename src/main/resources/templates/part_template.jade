@@ -37,3 +37,11 @@ html
                 tr
                     td #{row.label}
                     td #{row.value}
+    h1 Interchanges
+    table
+            tbody
+                each interchange in interchanges
+                    tr
+                        td #{interchange.manufacturer}
+                        td #{interchange.part_number}
+                        td #{interchange.description}

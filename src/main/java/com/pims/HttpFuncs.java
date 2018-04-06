@@ -98,6 +98,7 @@ public class HttpFuncs {
             else {
                 body = makeGetRequest(url, sku);
                 subKey = String.format("%s_%s",sku, getType(url));
+                subKey = "interchanges";
             }
             c.output(KV.of(sku, KV.of(subKey,body)));
 
@@ -119,7 +120,7 @@ public class HttpFuncs {
 //                                    "attrsreader/product/SKU/interchanges/",
 //                                    "attrsreader/product/SKU/service_kits/"));
                             ArrayList<String> urls = new ArrayList<String>(Arrays.asList(
-                                    "frontend/product"));
+                                    "frontend/product", "attrsreader/product/SKU/interchanges/"));
                             for (String url : urls
                                     ) {
                                 c.output(KV.of(c.element(), url));
