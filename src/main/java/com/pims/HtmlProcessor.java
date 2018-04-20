@@ -6,19 +6,19 @@ package com.pims;
 
 import avro.shaded.com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import de.neuland.jade4j.Jade4J;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,7 +30,7 @@ public class HtmlProcessor {
         private File catalogFile;
 
         CatalogProcessor() {
-            catalogFile = new File("responses/catalog.html");
+            catalogFile = new File("/home/kshakirov/git/sinatra-prerenderer/public/catalog.html");
             catalogFile.delete();
             try {
                 System.out.println("Creating new file");
@@ -54,9 +54,29 @@ public class HtmlProcessor {
             }).collect(Collectors.toList());
         }
 
+
+        private String createSnippet(){
+            return "{\n" +
+                    "  \"@context\": \"http://schema.org\",\n" +
+                    "  \"@type\": \"Organization\",\n" +
+                    "  \"url\": \"https://www.turbointernational.com\",\n" +
+                    "  \"name\": \"Turbo International\",\n" +
+                    "  \"description\":\"Turbo International was founded in 1989 and since then has been dedicated to serving the global turbocharger aftermarket with an ever increasing range of high quality turbocharger assemblies and component parts at competitive prices. In addition to our headquarters and inventory located in southern California, we have a European sales office based in the UK. From these locations we serve customers on six continents. \",\n" +
+                    "  \"contactPoint\": [\n" +
+                    "    {\n" +
+                    "      \"@type\": \"ContactPoint\",\n" +
+                    "      \"telephone\": \"+1-877-746-0909\",\n" +
+                    "      \"contactType\": \"Customer service\",\n" +
+                    "      \"areaServed\": \"US\"\n" +
+                    "    }\n" +
+                    "  ]\n" +
+                    "}";
+        }
+
         private Map<String, Object> createModel(List<String> keys) {
             Map<String, Object> model = new HashMap<>();
             model.put("parts", createCatalogTable(keys));
+            model.put("snippet", createSnippet());
             return model;
         }
 
@@ -87,9 +107,33 @@ public class HtmlProcessor {
 
         }
 
+        private String createPageTitle(Part part) {
+            return String.format("%s %s %s", part.manufacturer, part.part_type, part.name);
+        }
+
+        private String createContent(Part part) {
+            return String.format("Product: %s, Category: %s , Manufacturer: %s", part.name, part.part_type, part.manufacturer);
+        }
+
+        private String createSnippet(Part part){
+            return String.format("{\n" +
+                    "\"@context\": \"http://schema.org\",\n" +
+                    "\"@type\": \"Product\",\n" +
+                    "\"category\": \"%s\",\n" +
+                    "\"name\": \"%s\",\n" +
+                    "\"ProductId\": \"%s\",\n" +
+                    "\"manufacturer\": \"%s\",\n" +
+                    "\"sku\": \"%s\",\n" +
+                    "\"url\": \"https://www.turbointernational.com/part/sku/%s\"\n" +
+                    "}\n", part.part_type, part.name, part.part_number,
+                    part.manufacturer, part.part_number, part.sku);
+        }
+
         private Map<String, Object> createProductInformation(Part part) {
             Map<String, Object> model = new HashMap<String, Object>();
-            model.put("pageTitle", part.name);
+            model.put("pageTitle", createPageTitle(part));
+            model.put("content", createContent(part));
+            model.put("snippet", createSnippet(part));
             model.put("manufacturer", part.manufacturer);
             model.put("part_number", part.part_number);
             model.put("part_type", part.part_type);
@@ -136,6 +180,7 @@ public class HtmlProcessor {
             return model;
         }
 
+
         private Map<String, Object> createModel(Part part) {
             Map<String, Object> model = createProductInformation(part);
             model = createAdditionalInformation(model, part);
@@ -152,7 +197,7 @@ public class HtmlProcessor {
 
         private List<Map<String, Object>> createInterchanges(Interchange[] interchanges) {
             Stream<Interchange> stream = Stream.of(interchanges);
-            return   stream.map(i->{
+            return stream.map(i -> {
                 Map<String, Object> ii = new HashedMap();
                 ii.put("manufacturer", i.manufacturer);
                 ii.put("part_number", i.part_number);
@@ -161,13 +206,41 @@ public class HtmlProcessor {
             }).collect(Collectors.toList());
         }
 
+        private List<Map<String, Object>> createWhereUseds(Collection<WhereUsed> whereUseds) {
+
+            return whereUseds.stream().map(w -> {
+                Map<String, Object> ii = new HashedMap();
+                ii.put("manufacturer", w.manufacturer);
+                ii.put("partNumber", w.partNumber);
+                ii.put("tiPartNumber", w.tiPartNumber);
+                Stream stream = Stream.of(w.turboPartNumbers);
+                String numbers = stream.collect(Collectors.joining(",")).toString();
+                ii.put("turboPartNumbers", numbers);
+                return ii;
+            }).collect(Collectors.toList());
+        }
+
         private Map<String, Object> addInterchangesModel(Map<String, Object> model, String interchanges) {
             Gson gson = new Gson();
             Interchange[] ints = gson.fromJson(interchanges, Interchange[].class);
-            if(ints.length > 0)
+            if (ints.length > 0)
                 model.put("interchanges", createInterchanges(ints));
             else
-                model.put("interchanges",Collections.emptyList());
+                model.put("interchanges", Collections.emptyList());
+            return model;
+        }
+
+        private Map<String, Object> addWhereUsedModel(Map<String, Object> model, String whereuseds) {
+            Gson gson = new Gson();
+            Type WhereUsedMap = new TypeToken<HashMap<String, WhereUsed>>() {
+            }.getType();
+
+            Map<String, WhereUsed> wusds = gson.fromJson(whereuseds, WhereUsedMap);
+            Collection<WhereUsed> whereUseds = wusds.values();
+            if (whereUseds.size() > 0)
+                model.put("where_useds", createWhereUseds(whereUseds));
+            else
+                model.put("where_useds", Collections.emptyList());
             return model;
         }
 
@@ -180,6 +253,8 @@ public class HtmlProcessor {
                     model = createPartModel(elem.getValue(), key);
                 if (elem.getKey().equalsIgnoreCase("interchanges"))
                     model = addInterchangesModel(model, elem.getValue());
+                if (elem.getKey().equalsIgnoreCase("where_used"))
+                    model = addWhereUsedModel(model, elem.getValue());
             }
             try {
                 html = Jade4J.render(getTemplate("part_template.jade"), model);

@@ -120,7 +120,8 @@ public class HttpFuncs {
 //                                    "attrsreader/product/SKU/interchanges/",
 //                                    "attrsreader/product/SKU/service_kits/"));
                             ArrayList<String> urls = new ArrayList<String>(Arrays.asList(
-                                    "frontend/product", "attrsreader/product/SKU/interchanges/"));
+                                    "frontend/product", "attrsreader/product/SKU/interchanges/",
+                                    "attrsreader/product/SKU/where_used/"));
                             for (String url : urls
                                     ) {
                                 c.output(KV.of(c.element(), url));

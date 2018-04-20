@@ -2,7 +2,9 @@ doctype html
 html
   head
     title= pageTitle
+    meta(name="Description", content="#{content}")
   body
+    script(type="application/ld+json") "#{snippet}"
     h1 Product Information
     table
         tr
@@ -45,3 +47,12 @@ html
                         td #{interchange.manufacturer}
                         td #{interchange.part_number}
                         td #{interchange.description}
+    h1 Where used
+    table
+            tbody
+                each where_used in where_useds
+                    tr
+                        td #{where_used.partNumber}
+                        td #{where_used.manufacturer}
+                        td #{where_used.tiPartNumber}
+                        td #{where_used.turboPartNumbers}
