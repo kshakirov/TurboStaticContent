@@ -112,11 +112,12 @@ public class HtmlProcessor {
         }
 
         private String createPageTitle(Part part) {
-            return String.format("%s %s %s", part.manufacturer, part.part_type, part.name);
+            return String.format("%s %s %s", part.manufacturer, part.part_type, part.part_number);
         }
 
         private String createContent(Part part) {
-            return String.format("Product: %s, Category: %s , Manufacturer: %s", part.name, part.part_type, part.manufacturer);
+            return String.format("Product: %s, Category: %s , Manufacturer: %s , Description: %s", part.part_number,
+                    part.part_type, part.manufacturer, part.description);
         }
 
         private String createSnippet(Part part){
