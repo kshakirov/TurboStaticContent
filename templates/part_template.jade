@@ -1,0 +1,58 @@
+doctype html
+html
+  head
+    title= pageTitle
+    meta(name="Description", content="#{content}")
+  body
+    script(type="application/ld+json") "#{snippet}"
+    h1 Product Information
+    table
+        tr
+            td Part Type
+            td=part_type
+        tr
+            td  Manufacturer
+            td=manufacturer
+        tr
+            td  Part Number
+            td=part_number
+        tr
+            td  Name
+            td=name
+        tr
+            td Description
+            td=description
+    h1 Additional Information
+    table
+        tr
+            td Turbo Type
+            td=turbo_type
+        tr
+            td Turbo Model
+            td=turbo_model
+
+
+    h1 Critical Dimensions
+    table
+        tbody
+            each row in rows
+                tr
+                    td #{row.label}
+                    td #{row.value}
+    h1 Interchanges
+    table
+            tbody
+                each interchange in interchanges
+                    tr
+                        td #{interchange.manufacturer}
+                        td #{interchange.part_number}
+                        td #{interchange.description}
+    h1 Where used
+    table
+            tbody
+                each where_used in where_useds
+                    tr
+                        td #{where_used.partNumber}
+                        td #{where_used.manufacturer}
+                        td #{where_used.tiPartNumber}
+                        td #{where_used.turboPartNumbers}

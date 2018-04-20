@@ -28,11 +28,11 @@ import java.util.Arrays;
  * Created by kshakirov on 2/23/18.
  */
 public class HttpFuncs {
-    static class HttpRequestRunner extends DoFn<KV<String, String>, KV<String, KV<String,String>>> {
+    static class HttpRequestRunner extends DoFn<KV<String, String>, KV<String, KV<String, String>>> {
         private String host = "http://staging.turbointernational.com/";
 
-        private String getType(String url){
-            String [] segments = url.split("/");
+        private String getType(String url) {
+            String[] segments = url.split("/");
             return segments[6];
         }
 
@@ -89,18 +89,17 @@ public class HttpFuncs {
             String subKey = "part";
             url = url.replace("SKU", sku);
             String body = "";
-            if (url.contains("frontend") ) {
+            if (url.contains("frontend")) {
                 body = makePostRequest(url, sku);
-            }else if(url.contains("where_used")){
+            } else if (url.contains("where_used")) {
                 body = makePostRequest(url, sku);
                 subKey = "where_used";
-            }
-            else {
+            } else {
                 body = makeGetRequest(url, sku);
-                subKey = String.format("%s_%s",sku, getType(url));
+                subKey = String.format("%s_%s", sku, getType(url));
                 subKey = "interchanges";
             }
-            c.output(KV.of(sku, KV.of(subKey,body)));
+            c.output(KV.of(sku, KV.of(subKey, body)));
 
 
         }
@@ -114,11 +113,6 @@ public class HttpFuncs {
                     sku.apply(ParDo.of(new DoFn<String, KV<String, String>>() {
                         @ProcessElement
                         public void processElement(ProcessContext c) {
-//                            ArrayList<String> urls = new ArrayList<String>(Arrays.asList(
-//                                    "frontend/product", "attrsreader/product/SKU/where_used/",
-//                                    "attrsreader/product/SKU/bom/",
-//                                    "attrsreader/product/SKU/interchanges/",
-//                                    "attrsreader/product/SKU/service_kits/"));
                             ArrayList<String> urls = new ArrayList<String>(Arrays.asList(
                                     "frontend/product", "attrsreader/product/SKU/interchanges/",
                                     "attrsreader/product/SKU/where_used/"));

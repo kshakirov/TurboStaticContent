@@ -29,8 +29,8 @@ public class HtmlProcessor {
     static class CatalogProcessor implements SerializableFunction<Iterable<String>, String> {
         private File catalogFile;
 
-        CatalogProcessor() {
-            catalogFile = new File("/home/kshakirov/git/sinatra-prerenderer/public/catalog.html");
+        CatalogProcessor(String targetFolder) {
+            catalogFile = new File(targetFolder + "catalog.html");
             catalogFile.delete();
             try {
                 System.out.println("Creating new file");
@@ -87,7 +87,7 @@ public class HtmlProcessor {
                 Map<String, Object> model = createModel(keysList);
                 if (keysList.size() > 1) {
                     try {
-                        String html = Jade4J.render(getTemplate("catalog_template.jade"), model);
+                        String html = Jade4J.render("templates/catalog_template.jade", model);
                         System.out.println(String.format("Appending to File [%d] items", keysList.size()));
                         FileUtils.writeStringToFile(catalogFile, html, true);
                     } catch (IOException e) {
@@ -101,9 +101,13 @@ public class HtmlProcessor {
     }
 
     static class PartProcessor extends DoFn<KV<String, Iterable<KV<String, String>>>, String> {
+        private String folder;
+        PartProcessor(String targetFolder){
+            folder = targetFolder;
+        }
 
         private String getTemplate(String filename) {
-            return getClass().getClassLoader().getResource("templates/" + filename).getPath();
+            return getClass().getClassLoader().getResource("templates/" + filename).getFile();
 
         }
 
@@ -257,7 +261,7 @@ public class HtmlProcessor {
                     model = addWhereUsedModel(model, elem.getValue());
             }
             try {
-                html = Jade4J.render(getTemplate("part_template.jade"), model);
+                html = Jade4J.render("templates/part_template.jade", model);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -267,7 +271,7 @@ public class HtmlProcessor {
 
         @ProcessElement
         public void processElement(ProcessContext c) {
-            File temp = new File("/home/kshakirov/git/sinatra-prerenderer/public/" + c.element().getKey() + ".html");
+            File temp = new File(folder + c.element().getKey() + ".html");
             try {
                 Iterator<KV<String, String>> iterator = c.element().getValue().iterator();
                 String key = c.element().getKey();
@@ -283,12 +287,13 @@ public class HtmlProcessor {
         }
     }
 
-    public static PartProcessor createPartProcessor() {
-        return new PartProcessor();
+    public static PartProcessor createPartProcessor(String targetFolder) {
+
+        return new PartProcessor(targetFolder);
     }
 
-    public static CatalogProcessor createCatalogProcesssor() {
-        return new CatalogProcessor();
+    public static CatalogProcessor createCatalogProcesssor(String targetFolder) {
+        return new CatalogProcessor(targetFolder);
     }
 
 }

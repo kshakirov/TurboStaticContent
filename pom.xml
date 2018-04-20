@@ -21,7 +21,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>test-pipeline</artifactId>
+    <artifactId>static-pages-pipeline</artifactId>
     <version>0.1</version>
 
     <packaging>jar</packaging>
@@ -89,7 +89,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.github.alexspivak.Main</mainClass>
+                            <mainClass>com.pims.StaticPagesPipeline</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
