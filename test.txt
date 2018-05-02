@@ -1,4 +1,5 @@
 http://staging.turbointernational.com/part/sku/46073
+https://turbointernational.com/part/sku/8048
 http://staging.turbointernational.com/part/sku/48024
 http://staging.turbointernational.com/part/sku/46779
 http://staging.turbointernational.com/part/sku/46103

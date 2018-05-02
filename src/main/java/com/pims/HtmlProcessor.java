@@ -55,7 +55,7 @@ public class HtmlProcessor {
         }
 
 
-        private String createSnippet(){
+        private String createSnippet() {
             return "{\n" +
                     "  \"@context\": \"http://schema.org\",\n" +
                     "  \"@type\": \"Organization\",\n" +
@@ -102,7 +102,8 @@ public class HtmlProcessor {
 
     static class PartProcessor extends DoFn<KV<String, Iterable<KV<String, String>>>, String> {
         private String folder;
-        PartProcessor(String targetFolder){
+
+        PartProcessor(String targetFolder) {
             folder = targetFolder;
         }
 
@@ -116,21 +117,25 @@ public class HtmlProcessor {
         }
 
         private String createContent(Part part) {
-            return String.format("Product: %s, Category: %s , Manufacturer: %s , Description: %s", part.part_number,
-                    part.part_type, part.manufacturer, part.description);
+            String description = String.format("Product: %s, Category: %s, Manufacturer: %s", part.part_number,
+                    part.part_type, part.manufacturer);
+            if(part.description != null){
+                description += String.format(", Description: %s",part.description);
+            }
+            return description;
         }
 
-        private String createSnippet(Part part){
+        private String createSnippet(Part part) {
             return String.format("{\n" +
-                    "\"@context\": \"http://schema.org\",\n" +
-                    "\"@type\": \"Product\",\n" +
-                    "\"category\": \"%s\",\n" +
-                    "\"name\": \"%s\",\n" +
-                    "\"ProductId\": \"%s\",\n" +
-                    "\"manufacturer\": \"%s\",\n" +
-                    "\"sku\": \"%s\",\n" +
-                    "\"url\": \"https://www.turbointernational.com/part/sku/%s\"\n" +
-                    "}\n", part.part_type, part.name, part.part_number,
+                            "\"@context\": \"http://schema.org\",\n" +
+                            "\"@type\": \"Product\",\n" +
+                            "\"category\": \"%s\",\n" +
+                            "\"name\": \"%s\",\n" +
+                            "\"ProductId\": \"%s\",\n" +
+                            "\"manufacturer\": \"%s\",\n" +
+                            "\"sku\": \"%s\",\n" +
+                            "\"url\": \"https://www.turbointernational.com/part/sku/%s\"\n" +
+                            "}\n", part.part_type, part.name, part.part_number,
                     part.manufacturer, part.part_number, part.sku);
         }
 
@@ -211,6 +216,14 @@ public class HtmlProcessor {
             }).collect(Collectors.toList());
         }
 
+        private String createInterchangesContent(List<Map<String, Object>> interchanges) {
+            String content = ", Interchangeable Part: ";
+            return content + interchanges.stream()
+                    .map(i -> (String) i.get("part_number"))
+                    .collect(Collectors.joining(",")).toString();
+
+        }
+
         private List<Map<String, Object>> createWhereUseds(Collection<WhereUsed> whereUseds) {
 
             return whereUseds.stream().map(w -> {
@@ -225,12 +238,25 @@ public class HtmlProcessor {
             }).collect(Collectors.toList());
         }
 
+        private String createWhereUsedContent(Collection<WhereUsed> whereUseds) {
+            String content = ", Turbocharger Serviced: ";
+            return content + whereUseds.stream().filter(wu -> wu.partType.equalsIgnoreCase("turbo"))
+                    .map(wu ->  wu.partNumber)
+                    .collect(Collectors.joining(",")).toString();
+
+        }
+
+
+
         private Map<String, Object> addInterchangesModel(Map<String, Object> model, String interchanges) {
             Gson gson = new Gson();
             Interchange[] ints = gson.fromJson(interchanges, Interchange[].class);
-            if (ints.length > 0)
-                model.put("interchanges", createInterchanges(ints));
-            else
+            if (ints.length > 0) {
+                List<Map<String, Object>> interchangesList = createInterchanges(ints);
+                model.put("interchanges", interchangesList);
+                model.put("content", model.get("content") + createInterchangesContent(interchangesList));
+
+            } else
                 model.put("interchanges", Collections.emptyList());
             return model;
         }
@@ -242,8 +268,10 @@ public class HtmlProcessor {
 
             Map<String, WhereUsed> wusds = gson.fromJson(whereuseds, WhereUsedMap);
             Collection<WhereUsed> whereUseds = wusds.values();
-            if (whereUseds.size() > 0)
+            if (whereUseds.size() > 0) {
                 model.put("where_useds", createWhereUseds(whereUseds));
+                model.put("content", model.get("content") + createWhereUsedContent(whereUseds));
+            }
             else
                 model.put("where_useds", Collections.emptyList());
             return model;
