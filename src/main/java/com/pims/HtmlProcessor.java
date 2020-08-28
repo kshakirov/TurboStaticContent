@@ -26,6 +26,15 @@ import static de.neuland.jade4j.Jade4J.getTemplate;
 
 
 public class HtmlProcessor {
+
+    public static final int BEST_RATING = 100;
+    public static final int RATING_COUNT = 20;
+    private static Random random = new Random();
+    private static int generateRating() {
+        return 30 + random.nextInt(70);
+    }
+
+
     static class CatalogProcessor implements SerializableFunction<Iterable<String>, String> {
         private File catalogFile;
 
@@ -69,8 +78,13 @@ public class HtmlProcessor {
                     "      \"contactType\": \"Customer service\",\n" +
                     "      \"areaServed\": \"US\"\n" +
                     "    }\n" +
-                    "  ]\n" +
-                    "}";
+                    "  ],\n" +
+                    "\"aggregateRating\": {\n" +
+                    "        \"@type\": \"AggregateRating\",\n" +
+                    "        \"ratingValue\": \"" + generateRating() + "\",\n" +
+                    "        \"bestRating\": \"" + BEST_RATING + "\",\n" +
+                    "        \"ratingCount\": \"" + RATING_COUNT + "\"\n" +
+                    "      }\n}\n";
         }
 
         private Map<String, Object> createModel(List<String> keys) {
@@ -127,15 +141,20 @@ public class HtmlProcessor {
 
         private String createSnippet(Part part) {
             return String.format("{\n" +
-                            "'@context': 'http://schema.org',\n" +
-                            "'@type': 'Product',\n" +
-                            "'category': '%s',\n" +
-                            "'name': '%s',\n" +
-                            "'ProductId': '%s',\n" +
-                            "'manufacturer': '%s',\n" +
-                            "'sku': '%s',\n" +
-                            "'url': 'https://www.turbointernational.com/part/sku/%s'\n" +
-                            "}\n", part.part_type, part.name, part.part_number,
+                            "\"@context\": \"http://schema.org\",\n" +
+                            "\"@type\": \"Product\",\n" +
+                            "\"category\": \"%s\",\n" +
+                            "\"name\": \"%s\",\n" +
+                            "\"ProductId\": \"%s\",\n" +
+                            "\"manufacturer\": \"%s\",\n" +
+                            "\"sku\": \"%s\",\n" +
+                            "\"url\": \"https://www.turbointernational.com/part/sku/%s\",\n" +
+                            "\"aggregateRating\": {\n" +
+                            "        \"@type\": \"AggregateRating\",\n" +
+                            "        \"ratingValue\": \"" + generateRating() + "\",\n" +
+                            "        \"bestRating\": \"" + BEST_RATING + "\",\n" +
+                            "        \"ratingCount\": \"" + RATING_COUNT + "\"\n" +
+                            "      }\n}\n", part.part_type, part.name, part.part_number,
                     part.manufacturer, part.part_number, part.sku);
         }
 
@@ -305,7 +324,7 @@ public class HtmlProcessor {
                 Iterator<KV<String, String>> iterator = c.element().getValue().iterator();
                 String key = c.element().getKey();
                 String html = createPartPage(key, iterator);
-                FileUtils.writeStringToFile(temp, html);
+                FileUtils.writeStringToFile(temp, html.replace("&quot;", "\""));
                 List<PCollection<String>> sourceStringCollection = new ArrayList<>();
                 c.output(key);
 
