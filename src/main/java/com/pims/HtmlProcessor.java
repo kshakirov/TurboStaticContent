@@ -127,14 +127,14 @@ public class HtmlProcessor {
 
         private String createSnippet(Part part) {
             return String.format("{\n" +
-                            "\"@context\": \"http://schema.org\",\n" +
-                            "\"@type\": \"Product\",\n" +
-                            "\"category\": \"%s\",\n" +
-                            "\"name\": \"%s\",\n" +
-                            "\"ProductId\": \"%s\",\n" +
-                            "\"manufacturer\": \"%s\",\n" +
-                            "\"sku\": \"%s\",\n" +
-                            "\"url\": \"https://www.turbointernational.com/part/sku/%s\"\n" +
+                            "'@context': 'http://schema.org',\n" +
+                            "'@type': 'Product',\n" +
+                            "'category': '%s',\n" +
+                            "'name': '%s',\n" +
+                            "'ProductId': '%s',\n" +
+                            "'manufacturer': '%s',\n" +
+                            "'sku': '%s',\n" +
+                            "'url': 'https://www.turbointernational.com/part/sku/%s'\n" +
                             "}\n", part.part_type, part.name, part.part_number,
                     part.manufacturer, part.part_number, part.sku);
         }
